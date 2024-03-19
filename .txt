@@ -1,0 +1,20 @@
+1   ROUARD             25:45.1
+2   VERSTAPPEN        +00:11.3
+3   POTTY             +00:36.1
+4   HODENIUS          +01:16.4
+5   MAZUIN            +01:57.4
+6   SERDERIDIS        +02:04.5
+7   BEDORET           +02:24.0
+8   STAMPAERT         +02:25.1
+9   DECOCK            +02:47.5
+10  DEWILDE           +03:08.7
+11  SEPTON J�r�me     +03:44.9
+12  PEX               +04:04.4
+13  SCHLOESSER        +04:15.8
+14  DETHISE Jonathan   +04:22.9
+15  SCHMITT           +04:45.8
+16  GROPP             +05:59.9
+17  REVILLOD          +06:15.0
+18  SPITTAELS         +06:36.6
+19  FIASSE            +06:39.2
+20  BEMMANN           +06:44.0
