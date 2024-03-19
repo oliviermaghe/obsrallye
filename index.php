@@ -1,13 +1,20 @@
+<?php
+if (@$_REQUEST["ajax"] == "write") {
+	$myfile = fopen($_REQUEST["scope"] . ".txt", "w");
+	$txt = $_REQUEST["contenu"];
+	fwrite($myfile, $txt);
+	fclose($myfile);
+	die ("done");
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>OBS Classement</title>
-
-	<script src="https://code.jquery.com/jquery-3.6.4.min.js"
-		integrity="sha256-oP6HI9z1XaZNBrJURtCoUT5SUnxFr8s3BzRl+cbzUq8=" crossorigin="anonymous"></script>
+	<title>OBS Import</title>
 	<style>
 		body {
 			font-size: 20pt;
@@ -35,7 +42,7 @@
 
 		textarea {
 			width: 20em;
-			height: 26em;
+			height: 30em;
 		}
 
 		.flex {
@@ -44,95 +51,41 @@
 	</style>
 </head>
 
-<!-- 1   ROUARD             25:45.1
-2   VERSTAPPEN        +00:11.3
-3   POTTY             +00:36.1
-4   HODENIUS          +01:16.4
-5   MAZUIN            +01:57.4
-6   SERDERIDIS        +02:04.5
-7   BEDORET           +02:24.0
-8   STAMPAERT         +02:25.1
-9   DECOCK            +02:47.5
-10  DEWILDE           +03:08.7
-11  SEPTON J�r�me     +03:44.9
-12  PEX               +04:04.4
-13  SCHLOESSER        +04:15.8
-14  DETHISE Jonathan   +04:22.9
-15  SCHMITT           +04:45.8
-16  GROPP             +05:59.9
-17  REVILLOD          +06:15.0
-18  SPITTAELS         +06:36.6
-19  FIASSE            +06:39.2
-20  BEMMANN           +06:44.0
-	-->
-
 <body>
 	<div class="container">
-		<h1>OBS Rallye</h1>
-		<p>Activer le CORS extention dans Chrome</p>
+		<h1>OBS Rally Overall Import</h1>
+		<p>Chrome CORS extention is needed</p>
 		<div class="flex">
+			<!-- I need 2 overall in my case, special and general -->
 			<div>
-				<h2>Spéciale</h2>
-				<input type="text" id="urlspeciale"
-					value="https://www.liverally.be:8443/screen/service/scrtxtTable/ss5-r1.txt" />
+				<h2>Special</h2>
+				<input type="text" placeholder="File url" data-filename="speciale" value="raw.txt" />
 				<br />
-				<textarea id="contenuspeciale" name="textbox"></textarea>
+				<!-- https://www.liverally.be:8443/screen/service/scrtxtTable/ss5-r1.txt -->
+				<textarea name="textbox"></textarea>
 				<br />
-				<button onclick="generate('speciale'); return false;">Create
+				<button onclick="generate(this);">Create
 					file</button>
 			</div>
 			<div>
-				<h2>Général</h2>
-				<input type="text" id="urlclassement"
+				<h2>General</h2>
+				<input type="text" placeholder="File url" data-filename="general"
 					value="https://www.liverally.be:8443/screen/service/scrtxtTable/ge5-r1.txt" />
 				<br />
-				<textarea id="contenuclassement" name="textbox"></textarea>
+				<textarea name="textbox"></textarea>
 				<br />
-				<button onclick="generate('general');return false;">Create
+				<button onclick="generate(this);">Create
 					file</button>
 			</div>
 		</div>
 	</div>
 
-	<script>
-		(function () {
-			var textFile = null,
-				makeTextFile = function (text) {
-					var data = new Blob([text], { type: "text/plain" });
-
-					// If we are replacing a previously generated file we need to
-					// manually revoke the object URL to avoid memory leaks.
-					if (textFile !== null) {
-						window.URL.revokeObjectURL(textFile);
-					}
-
-					textFile = window.URL.createObjectURL(data);
-
-					return textFile;
-				};
-		})();
-
-		function generate(scope) {
-			let textbox = "";
-			let url = "";
-			let filename = "";
-			switch (scope) {
-				case "speciale":
-					url = document.getElementById("urlspeciale").value;
-					filename = "speciale";
-					textbox = "contenuspeciale";
-					break;
-				case "general":
-					url = document.getElementById("urlclassement").value;
-					filename = "classement";
-					textbox = "contenuclassement";
-					break;
-				default: return false;
-			}
-
-			if (url === "") return false;
-			if (textbox === "") return false;
-			if (filename === "") return false;
+	<script type="text/javascript">
+		function generate(obj) {
+			const input = obj.parentNode.querySelector("input");
+			const url = input.value;
+			const filename = input.dataset.filename;
+			const textbox = obj.parentNode.querySelector("textarea");
 
 			fetch(url)
 				.then(function (response) {
@@ -143,14 +96,24 @@
 				})
 				.then(function (text) {
 					let contenu = [];
+
+					// this will be used to align content, like in a table
 					let positionLength = 0;
 					let piloteLength = 0;
 					let tempsLength = 0;
-					for (line of text.split("\r\n")) {
-						// position pilote
+
+					// choose the end of line depending of your source file
+					returnCar = "\r\n";
+					returnCar = "\n";
+
+					// loop through source file
+					for (line of text.split(returnCar)) {
+						// this is my personnal use...
+						// pilote position
 						firstWhite = line.indexOf(" ")
 						positionPilote = line.substring(0, firstWhite)
 
+						// pilote timing
 						let startTemps = -1;
 						for (let i = line.length - 1; i >= 0; i--) {
 							if (/ /.test(line[i])) {
@@ -160,7 +123,7 @@
 						}
 						tempsPilote = line.slice((line.length - startTemps - 1) * -1);
 
-						// nom pilote
+						// pilot name start and end
 						startPilote = line.slice(firstWhite).search(/[a-zA-Z]/) + 1;
 
 						let endPilote = -1;
@@ -171,30 +134,42 @@
 							}
 						}
 						nomPilote = line.substring(startPilote, endPilote + 1).trim();
+
+						// if this position lenght is the longest one? The pilote name? The pilote timing?
 						if (positionPilote > -1) {
 							if (nomPilote.length > piloteLength) piloteLength = nomPilote.length;
 							if (tempsPilote.length > tempsLength) tempsLength = tempsPilote.length;
 							if (positionPilote.length > positionLength) positionLength = positionPilote.length;
 						}
+
 						contenu.push([positionPilote, nomPilote, tempsPilote]);
 					}
+					// debug
+					// console.table(contenu);
+					// console.log("longueur position", positionLength);
+					// console.log("longueur pilote", piloteLength);
+					// console.log("longueur temps", tempsLength);
 
-					console.log("longueur max", piloteLength);
-					// fabrication de text
+					// build the text output, aligned like a table
+					// fill the column with blank car untill it is = to longuest 
 					let textBoxcontent = "";
-					let chaineVide = "_";
 					for (line of contenu) {
-						textBoxcontent += (line[0] + chaineVide.repeat(positionPilote)).slice(positionPilote) + line[1] + chaineVide.repeat(piloteLength) + line[2] + chaineVide.repeat(tempsLength) + "\r";
+						textBoxcontent += (line[0] + " ".repeat(positionLength)).substr(0, positionLength) + " ";
+						textBoxcontent += (line[1] + " ".repeat(piloteLength)).substr(0, piloteLength) + " ";
+						textBoxcontent += line[2].trim() + "\r\n";
 					}
+					textBoxcontent += "-".repeat(positionLength + piloteLength + tempsLength + 1) + "\r\n \r\n \r\n";
 
+					// output to user only
+					textbox.value = textBoxcontent;
 
-					document.getElementById(textbox).value = textBoxcontent;
-					//document.getElementById(textbox).value = text;
-					// postAjax('write.php', { contenu: contenu, scope: filename }, function (data) {
-					// 	if (data == "done") document.getElementById(textbox).value = document.getElementById(textbox).value + "\nDone: " + filename;
-					// });
+					// send to write page, this will write
+					postAjax('?ajax=write', { contenu: textBoxcontent, scope: filename }, function (data) {
+						if (data == "done") textbox.value += "\nDone: " + filename;
+					});
 				});
 		}
+
 		function postAjax(url, data, success) {
 			var params = typeof data == 'string' ? data : Object.keys(data).map(
 				function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]) }
