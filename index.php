@@ -37,16 +37,28 @@ if (@$_REQUEST["ajax"] == "write") {
 
 		input {
 			font-size: 10pt;
-			width: 400px;
+			width: calc(100% - 2px);
 		}
 
 		textarea {
-			width: 20em;
+			width: 100%;
 			height: 30em;
 		}
 
 		.flex {
 			display: flex;
+			gap: 1em;
+			width: 100%;
+
+			& div {
+				width: 100%;
+			}
+
+			.meter {
+				width: 0;
+				height: 4px;
+				background-color: orange;
+			}
 		}
 	</style>
 </head>
@@ -66,6 +78,9 @@ if (@$_REQUEST["ajax"] == "write") {
 				<br />
 				<button onclick="generate(this);">Create
 					file</button>
+				<button onclick="runTimer(this,1);">Auto Refresh</button>
+				<button onclick="runTimer(this,0);">Stop Autorefresh</button>
+				<div class="meter"></div>
 			</div>
 			<div>
 				<h2>General</h2>
@@ -76,6 +91,9 @@ if (@$_REQUEST["ajax"] == "write") {
 				<br />
 				<button onclick="generate(this);">Create
 					file</button>
+				<button onclick="runTimer(this,1);">Auto Refresh</button>
+				<button onclick="runTimer(this,0);">Stop Autorefresh</button>
+				<div class="meter"></div>
 			</div>
 		</div>
 	</div>
@@ -133,6 +151,7 @@ if (@$_REQUEST["ajax"] == "write") {
 								break;
 							}
 						}
+						//nomPilote = removeAccents(line.substring(startPilote, endPilote + 1).trim());
 						nomPilote = line.substring(startPilote, endPilote + 1).trim();
 
 						// if this position lenght is the longest one? The pilote name? The pilote timing?
@@ -165,7 +184,13 @@ if (@$_REQUEST["ajax"] == "write") {
 
 					// send to write page, this will write
 					postAjax('?ajax=write', { contenu: textBoxcontent, scope: filename }, function (data) {
-						if (data == "done") textbox.value += "\nDone: " + filename;
+						if (data == "done") {
+							const date = new Date();
+							const heure = date.getHours().toString().padStart(2, '0');
+							const minutes = date.getMinutes().toString().padStart(2, '0');
+							const secondes = date.getSeconds().toString().padStart(2, '0');
+							textbox.value += "Done: " + filename + ".txt @" + `${heure}:${minutes}:${secondes}`;
+						}
 					});
 				});
 		}
@@ -184,6 +209,34 @@ if (@$_REQUEST["ajax"] == "write") {
 			xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
 			xhr.send(params);
 			return xhr;
+		}
+
+		const removeAccents = str => str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+		let timtimeoutIdeOut;
+		function runTimer(obj, action) {
+
+			const vuMeter = obj.parentNode.querySelector("div.meter");
+			if (action === 0) {
+				vuMeter.style.width = 0;
+				return clearInterval(timeoutId);
+			}
+
+			const duration = 30000;
+			vuMeter.style.width = "100%";
+
+			let vmW = vuMeter.offsetWidth;
+			const speed = duration / vmW;
+
+			timeoutId = setInterval(() => {
+				vmW -= 1;
+				vuMeter.style.width = `${vmW}px`;
+				if (vmW === 0) {
+					clearInterval(timeoutId);
+					generate(obj);
+					runTimer(obj)
+				}
+			}, speed);
 		}
 
 	</script>
